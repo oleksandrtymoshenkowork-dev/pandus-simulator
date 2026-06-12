@@ -74,7 +74,7 @@ function VerdictBand({ s, ev }) {
       <div className="vcard">
         {issues.length === 0
           ? <div className="allok">✔ Конфігурація відповідає всім перевіреним вимогам ДБН В.2.2-40:2018</div>
-          : <div className="issues">{issues.map((it, i) => <IssueRow key={it.id} it={it} idx={i} />)}</div>}
+          : <div className="issues">{issues.map((it, i) => <IssueRow key={`${it.id}-${it.status}`} it={it} idx={i} />)}</div>}
       </div>
     </section>
   );

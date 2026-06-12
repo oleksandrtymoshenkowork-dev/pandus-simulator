@@ -130,12 +130,20 @@ function Rider({ segs, X, Y, sc, slope, status, totalLen, m1 }) {
     const tick = (now) => {
       const e = env.current;
       const el = ref.current;
+      // коли вкладка прихована — пропускаємо кадри, щоб уникнути стрибка фази
+      if (document.hidden) { lastRef.current = now; raf = requestAnimationFrame(tick); return; }
       // тривалість циклу залежить лише від стану (стала), тож фаза не стрибає при зміні геометрії
       const cycle = e.status === 'fail' ? 6.8 : e.status === 'limit' ? 10.5 : 7.2;
       let dt = (now - lastRef.current) / 1000;
       lastRef.current = now;
       if (dt > 0.1) dt = 0.1;            // після прихованої вкладки — без ривка
-      if (statusRef.current !== e.status) { pRef.current = 0; statusRef.current = e.status; }
+      // скидаємо фазу лише при переході fail ↔ ok/limit (різний тип руху)
+      if (statusRef.current !== e.status) {
+        const wasFail = statusRef.current === 'fail';
+        const isFail = e.status === 'fail';
+        if (wasFail !== isFail) pRef.current = 0;
+        statusRef.current = e.status;
+      }
       pRef.current = (pRef.current + dt / cycle) % 1;
       const p = pRef.current;
       if (el) {
@@ -150,11 +158,11 @@ function Rider({ segs, X, Y, sc, slope, status, totalLen, m1 }) {
           else { x = x0; }
         } else {
           const x1 = 0.25, x2 = Math.max(e.totalLen - 0.95, x1 + 0.5);
-          if (p < 0.82) { x = x1 + (x2 - x1) * easeInOut(p / 0.82); }
+          if (p < 0.92) { x = x1 + (x2 - x1) * easeInOut(p / 0.92); }
           else { x = x2; }
-          // плавна поява внизу і згасання вгорі
-          if (p < 0.06) op = p / 0.06;
-          else if (p > 0.82) op = Math.max(0, 1 - (p - 0.82) / 0.18);
+          // плавна поява внизу і згасання вгорі (короткі вікна — мінімум невидимого часу)
+          if (p < 0.025) op = p / 0.025;
+          else if (p > 0.95) op = Math.max(0, 1 - (p - 0.95) / 0.05);
         }
         const { y, a } = surf(x, e);
         el.setAttribute('transform', `translate(${e.X(x)} ${e.Y(y)}) rotate(${-(a + tilt)}) scale(${e.sc} ${-e.sc})`);
