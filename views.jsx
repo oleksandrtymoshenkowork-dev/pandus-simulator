@@ -194,7 +194,6 @@ function ProfileView({ s, g, ev, focus }) {
   const item = (id) => ev.items.find((i) => i.id === id);
   const oc = OVERALL[ev.overall];
   const fade = (tag) => ({ opacity: focus === tag ? 1 : 0.15, transition: 'opacity 0.25s' });
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const slabPath = 'M ' + pts.map((p) => `${X(p.x)} ${Y(p.y)}`).join(' L ') + ` L ${X(worldW)} ${Y(0)} Z`;
   const surfPath = 'M ' + pts.map((p) => `${X(p.x)} ${Y(p.y)}`).join(' L ');
@@ -217,11 +216,8 @@ function ProfileView({ s, g, ev, focus }) {
   innerPts.forEach((p) => posts.push(p));
   segs.filter((sg) => sg.type === 'march').forEach((sg) => posts.push({ x: (sg.x0 + sg.x1) / 2, y: (sg.y0 + sg.y1) / 2 }));
 
-  /* фігура на першому марші */
+  /* перший марш (для Rider і підпису ухилу) */
   const m1 = segs.find((sg) => sg.type === 'march');
-  const ft = 0.42;
-  const fx = m1.x0 + ft * (m1.x1 - m1.x0), fy = m1.y0 + ft * (m1.y1 - m1.y0);
-  const extraTilt = Math.max(0, s.slope - 0.08) * 130;
 
   /* підпис ухилу */
   const lt = 0.74;
@@ -334,14 +330,8 @@ function ProfileView({ s, g, ev, focus }) {
         <path d={`M ${X(worldW - 0.35)} ${Y(H + 0.55)} L ${X(worldW - 0.35) + 0.34 * sc} ${Y(H + 0.47)} L ${X(worldW - 0.35)} ${Y(H + 0.39)} Z`} fill={C.accent} />
       </g>
 
-      {/* фігура в кріслі: анімований проїзд (статична при reduced motion) */}
-      {reduceMotion ? (
-        <g transform={`translate(${X(fx)} ${Y(fy)}) rotate(${-(g.angle + extraTilt)}) scale(${sc} ${-sc})`}>
-          <WheelchairSide />
-        </g>
-      ) : (
-        <Rider segs={segs} X={X} Y={Y} sc={sc} slope={s.slope} status={slopeSt} totalLen={worldW} m1={m1} />
-      )}
+      {/* фігура в кріслі: анімований проїзд — завжди, бо це функціональна демонстрація */}
+      <Rider segs={segs} X={X} Y={Y} sc={sc} slope={s.slope} status={slopeSt} totalLen={worldW} m1={m1} />
 
       {/* кут і ухил */}
       <g style={fade('slope')}>
