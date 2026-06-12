@@ -283,24 +283,31 @@ function ProfileView({ s, g, ev, focus }) {
         )}
       </g>
 
-      {/* поручні */}
+      {/* поручні — одна труба, загнута на двох рівнях (0,90 і 0,70 м), з'єднана заокругленими U-завершеннями */}
       <g>
         {posts.map((p, i) => (
           <line key={i} x1={X(p.x)} y1={Y(p.y)} x2={X(p.x)} y2={Y(p.y + s.railTop)} stroke={C.faint} strokeWidth="1.5" />
         ))}
-        <path d={railPath(0.7, Math.min(s.railExt, 0.12))} fill="none" stroke={railColor} strokeWidth={railW * 0.8} opacity="0.75" strokeLinejoin="round" strokeLinecap="round" />
+        {/* дитячий рівень 0,50 м — окрема труба (за потреби) */}
         {s.railChild && (
-          <path d={railPath(0.5, Math.min(s.railExt, 0.12))} fill="none" stroke={railColor} strokeWidth={railW * 0.7} opacity="0.6" strokeDasharray="5 4" strokeLinejoin="round" />
+          <path d={railPath(0.5, s.railExt)} fill="none" stroke={railColor} strokeWidth={railW} opacity="0.55" strokeDasharray="6 4" strokeLinejoin="round" strokeLinecap="round" />
         )}
+        {/* нижній рівень 0,70 м і верхній 0,90 м — однакова товщина */}
+        <path d={railPath(0.7, s.railExt)} fill="none" stroke={railColor} strokeWidth={railW} opacity="0.92" strokeLinejoin="round" strokeLinecap="round" />
         <path d={railPath(s.railTop, s.railExt)} fill="none" stroke={railColor} strokeWidth={railW} strokeLinejoin="round" strokeLinecap="round" />
-        {/* заокруглені завершення */}
-        <path d={`M ${X(p0.x - s.railExt)} ${Y(p0.y + s.railTop)} q -${0.06 * sc} 0 -${0.06 * sc} ${0.08 * sc}`} fill="none" stroke={extColor} strokeWidth={railW} strokeLinecap="round" />
-        <path d={`M ${X(pN.x + s.railExt)} ${Y(pN.y + s.railTop)} q ${0.06 * sc} 0 ${0.06 * sc} ${0.08 * sc}`} fill="none" stroke={extColor} strokeWidth={railW} strokeLinecap="round" />
-        {/* виступи кінців */}
-        <g stroke={extColor} strokeWidth={railW}>
-          <line x1={X(p0.x - s.railExt)} y1={Y(p0.y + s.railTop)} x2={X(p0.x)} y2={Y(p0.y + s.railTop)} />
-          <line x1={X(pN.x)} y1={Y(pN.y + s.railTop)} x2={X(pN.x + s.railExt)} y2={Y(pN.y + s.railTop)} />
-        </g>
+        {/* заокруглені U-завершення: верхній рівень плавно переходить у нижній — одна загнута труба */}
+        {(() => {
+          const gapPx = Y(p0.y + 0.7) - Y(p0.y + s.railTop); // > 0 (екран: нижче = більший y)
+          const bow = gapPx * 0.62;
+          const xL = X(p0.x - s.railExt), yLt = Y(p0.y + s.railTop), yLb = Y(p0.y + 0.7);
+          const xR = X(pN.x + s.railExt), yRt = Y(pN.y + s.railTop), yRb = Y(pN.y + 0.7);
+          return (
+            <g fill="none" stroke={extColor} strokeWidth={railW} strokeLinecap="round">
+              <path d={`M ${xL} ${yLt} C ${xL - bow} ${yLt} ${xL - bow} ${yLb} ${xL} ${yLb}`} />
+              <path d={`M ${xR} ${yRt} C ${xR + bow} ${yRt} ${xR + bow} ${yRb} ${xR} ${yRb}`} />
+            </g>
+          );
+        })()}
         {focus === 'rails' && (
           <g>
             <DimV x={X(p0.x) - 14} y1={Y(p0.y)} y2={Y(p0.y + s.railTop)} side={-1}

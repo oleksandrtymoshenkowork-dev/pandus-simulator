@@ -103,11 +103,11 @@ function Segmented({ options, value, onChange }) {
   );
 }
 
-function SwitchRow({ name, hint, value, onChange }) {
+function SwitchRow({ name, hint, help, value, onChange }) {
   return (
     <div className="switch-row">
       <div>
-        <div className="name">{name}</div>
+        <div className="name">{name}{help ? <QMark text={help} /> : null}</div>
         {hint ? <div className="hint">{hint}</div> : null}
       </div>
       <div
