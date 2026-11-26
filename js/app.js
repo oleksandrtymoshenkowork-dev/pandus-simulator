@@ -1,5 +1,5 @@
 /* Застосунок: стан (і в посиланні), вердикт, схеми, панель керування, навчання. */
-import { html, render, useState, useEffect, useMemo, useRef } from './vendor/preact-htm.js';
+import { html, render, useState, useEffect, useLayoutEffect, useMemo, useRef } from './vendor/preact-htm.js';
 import { DEFAULTS, RANGES, D1, evaluate, toHash, fromHash, fmt, fmtT, pl, clamp } from './norms.js';
 import { buildSegments, ProfileView, SectionView, PlanView, useWidth } from './views.js';
 import { setRiderEnv } from './anim.js';
@@ -175,6 +175,21 @@ function App() {
   const sbt = statusByTab(ev);
   const narrow = typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches;
   const mob = useRef(narrow);
+  const [isMob, setIsMob] = useState(narrow);
+
+  /* Без «стрибків» на телефоні й планшеті: сторінка не стає коротшою при перемиканні вкладок чи
+     зникненні зауважень — інакше браузер обрізає прокрутку і все під пальцем з'їжджає. */
+  const appRef = useRef(null), tallest = useRef(0);
+  useLayoutEffect(() => {
+    const el = appRef.current;
+    if (!el) return;
+    if (!matchMedia('(max-width: 1099px)').matches) { el.style.minHeight = ''; tallest.current = 0; return; }
+    const top = el.getBoundingClientRect().top;
+    let bottom = 0;
+    for (const c of el.children) if (getComputedStyle(c).position !== 'fixed') bottom = Math.max(bottom, c.getBoundingClientRect().bottom);
+    tallest.current = Math.max(tallest.current, bottom - top + 24);
+    el.style.minHeight = tallest.current + 'px';
+  });
 
   setRiderEnv({ segs, mode: ev.rider, wallX: segs[segs.length - 1].x1, verdict: ev.overall });
 
@@ -188,7 +203,7 @@ function App() {
   useEffect(() => {
     const on = () => setS(fromHash(location.hash));
     addEventListener('hashchange', on);
-    const mq = matchMedia('(max-width: 899px)'); const m = () => (mob.current = mq.matches); mq.addEventListener('change', m);
+    const mq = matchMedia('(max-width: 899px)'); const m = () => { mob.current = mq.matches; setIsMob(mq.matches); }; mq.addEventListener('change', m);
     return () => { removeEventListener('hashchange', on); mq.removeEventListener('change', m); };
   }, []);
 
@@ -233,7 +248,7 @@ function App() {
       zones=${[{ to: s.H / 0.08, color: 'fail' }, { to: 999, color: 'ok' }]} ticks=${[{ at: s.H / 0.08, label: '1:12' }, { at: s.H / 0.05, label: '1:20' }]} />`,
   };
 
-  return html`<div class="app">
+  return html`<div class="app" ref=${appRef}>
     <a class="skip" href="#controls">До параметрів</a>
     <header class="hdr">
       <div class="hdr-title">
@@ -262,14 +277,14 @@ function App() {
           ${VIEWS.map((v) => html`<button type="button" role="tab" aria-selected=${view === v.id} class=${view === v.id ? 'on' : ''} onClick=${() => setView(v.id)}>${v.label}</button>`)}
         </div>
         <${ViewCard} id="profile" active=${view === 'profile'} title="Профіль · вид збоку" note="кут на екрані = фактичному">
-          <${Sized} maxH=${400} render=${(W, mh) => html`<${ProfileView} s=${s} segs=${segs} ev=${ev} focus=${tab} W=${W} maxH=${Math.min(mh, W < 600 ? 260 : mh)} />`} />
+          <${Sized} maxH=${isMob ? 240 : 330} render=${(W, mh) => html`<${ProfileView} s=${s} segs=${segs} ev=${ev} focus=${tab} W=${W} maxH=${mh} />`} />
         </${ViewCard}>
         <div class="row2">
           <${ViewCard} id="section" active=${view === 'section'} title="Переріз · рис. 5а, 5д" note="ширина між поручнями">
-            <${Sized} maxH=${280} render=${(W, mh) => html`<${SectionView} s=${s} ev=${ev} focus=${tab} W=${W} maxH=${W < 600 ? 250 : mh} />`} />
+            <${Sized} maxH=${isMob ? 240 : 270} render=${(W, mh) => html`<${SectionView} s=${s} ev=${ev} focus=${tab} W=${W} maxH=${mh} />`} />
           </${ViewCard}>
           <${ViewCard} id="plan" active=${view === 'plan'} title="План · вид зверху" note="дощ показує поперечний ухил">
-            <${Sized} maxH=${240} render=${(W, mh) => html`<${PlanView} s=${s} segs=${segs} ev=${ev} focus=${tab} W=${W} maxH=${mh} />`} />
+            <${Sized} maxH=${isMob ? 240 : 270} render=${(W, mh) => html`<${PlanView} s=${s} segs=${segs} ev=${ev} focus=${tab} W=${W} maxH=${mh} />`} />
           </${ViewCard}>
         </div>
       </div>

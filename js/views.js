@@ -129,10 +129,12 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
   const worldW = wallX + 1.15, worldTop = H + 1.75, worldBot = -0.2;   // двері вищі за кадр — обрізаються
   const padL = 12, padR = 70, padT = 30, padB = 58;
   const sc = Math.min((W - padL - padR) / worldW, (maxH - padT - padB) / (worldTop - worldBot));
-  const svgH = Math.ceil((worldTop - worldBot) * sc + padT + padB);
+  // стала висота схеми (= maxH): сторінка не «стрибає»; креслення притиснуте до низу, як до ґрунту
+  const svgH = Math.round(maxH);
+  const top0 = Math.max(padT, svgH - padB - (worldTop - worldBot) * sc);
   const offX = padL + ((W - padL - padR) - worldW * sc) / 2;
   const X = (x) => offX + x * sc;
-  const Y = (y) => padT + (worldTop - y) * sc;
+  const Y = (y) => top0 + (worldTop - y) * sc;
   const st = (id) => ev.byId[id] ? ev.byId[id].status : 'ok';
   const fade = (tags) => ({ opacity: tags.includes(focus) ? 1 : W < 640 ? 0 : 0.18 });
 
@@ -342,9 +344,10 @@ export function SectionView({ s, ev, focus, W, maxH }) {
   const worldW = 2 * zE + 0.25, worldTop = Math.max(s.railTop, 1.3) + 0.35, worldBot = -0.25;
   const padL = 46, padR = 74, padT = 34, padB = 40;
   const sc = Math.min((W - padL - padR) / worldW, (maxH - padT - padB) / (worldTop - worldBot));
-  const svgH = Math.ceil((worldTop - worldBot) * sc + padT + padB);
+  const svgH = Math.round(maxH);                                   // стала висота — без стрибків
+  const top0 = padT + ((svgH - padT - padB) - (worldTop - worldBot) * sc) / 2;
   const cx = padL + (W - padL - padR) / 2;
-  const X = (z) => cx + z * sc, Y = (y) => padT + (worldTop - y) * sc;
+  const X = (z) => cx + z * sc, Y = (y) => top0 + (worldTop - y) * sc;
   const cs = s.cross / 100;
   const ys = (z) => -(z + zE) * cs;                                // поперечний ухил униз праворуч
   const sides = s.railsBoth ? [-1, 1] : [1];
@@ -375,7 +378,7 @@ export function SectionView({ s, ev, focus, W, maxH }) {
     ${chairs.map((zc, i) => html`<g class=${'chair' + (hitZ(zc) ? ' shake' : ' bob')} style=${{ animationDelay: `${i * 0.4}s` }}>
       <g transform="translate(${X(zc)} ${Y(ys(zc))}) scale(${sc} ${-sc})"><${ChairFront} hit=${hitZ(zc)} /></g></g>`)}
     ${chairs.some(hitZ) && html`<text x=${X(0)} y=${Y(1.45)} text-anchor="middle" class="big" fill=${C.fail}>не вміщується!</text>`}
-    ${two && html`<text x=${X(0)} y=${Y(1.55)} text-anchor="middle" class="lbl" fill=${C.muted}>двобічний рух</text>`}
+    ${two && !chairs.some(hitZ) && html`<text x=${X(0)} y=${Y(1.45)} text-anchor="middle" class="lbl" fill=${C.muted}>двобічний рух</text>`}
 
     <g style=${fade(['width'])} class="fade">
       ${sides.length === 2 && html`<line x1=${X(-half)} y1=${Y(worldTop - 0.1)} x2=${X(-half)} y2=${Y(ys(-half) + 0.1)} stroke=${SC[wSt]} stroke-dasharray="4 4" opacity="0.7" />`}
@@ -405,9 +408,10 @@ export function PlanView({ s, segs, ev, focus, W, maxH }) {
   const worldW = wallX + 0.35, worldH = 2 * zE;
   const padL = 12, padR = 70, padT = 26, padB = 40;
   const sc = Math.min((W - padL - padR) / worldW, (maxH - padT - padB) / worldH);
-  const svgH = Math.ceil(worldH * sc + padT + padB);
+  const svgH = Math.round(maxH);                                   // стала висота — без стрибків
+  const top0 = padT + ((svgH - padT - padB) - worldH * sc) / 2;
   const offX = padL + ((W - padL - padR) - worldW * sc) / 2;
-  const X = (x) => offX + x * sc, Y = (z) => padT + (z + zE) * sc;
+  const X = (x) => offX + x * sc, Y = (z) => top0 + (z + zE) * sc;
   const marches = segs.filter((sg) => sg.type === 'march');
   const xs = marches[0].x0, xe = marches[marches.length - 1].x1;
   const railColor = st('railLevels') === 'fail' || st('railDiam') === 'fail' ? C.fail : s.railContrast ? C.rail : C.railDull;
