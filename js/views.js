@@ -125,7 +125,7 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
   const H = s.H;
   const top = segs[segs.length - 1];
   const wallX = top.x1;
-  const worldW = wallX + 1.15, worldTop = H + 2.35, worldBot = -0.2;
+  const worldW = wallX + 1.15, worldTop = H + 1.75, worldBot = -0.2;   // двері вищі за кадр — обрізаються
   const padL = 12, padR = 70, padT = 30, padB = 58;
   const sc = Math.min((W - padL - padR) / worldW, (maxH - padT - padB) / (worldTop - worldBot));
   const svgH = Math.ceil((worldTop - worldBot) * sc + padT + padB);
@@ -133,11 +133,11 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
   const X = (x) => offX + x * sc;
   const Y = (y) => padT + (worldTop - y) * sc;
   const st = (id) => ev.byId[id] ? ev.byId[id].status : 'ok';
-  const fade = (tags) => ({ opacity: tags.includes(focus) ? 1 : 0.18 });
+  const fade = (tags) => ({ opacity: tags.includes(focus) ? 1 : W < 640 ? 0 : 0.18 });
 
   const marches = segs.filter((sg) => sg.type === 'march');
   const xs = marches[0].x0, xe = marches[marches.length - 1].x1;
-  const pts = [{ x: 0, y: 0 }, ...segs.map((sg) => ({ x: sg.x1, y: sg.type === 'march' ? sg.y1 : sg.y }))];
+  const pts =[{ x: 0, y: 0 }, ...segs.map((sg) => ({ x: sg.x1, y: sg.type === 'march' ? sg.y1 : sg.y }))];
   const P = (arr) => arr.map((p, i) => `${i ? 'L' : 'M'} ${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`).join(' ');
   const surf = P(pts);
   const body = surf + ` L ${X(wallX)} ${Y(worldBot)} L ${X(0)} ${Y(worldBot)} Z`;
@@ -206,7 +206,7 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
       const txt = { rest: 'Перепочинок', strain: 'Ой, круто!', back: 'Ой, круто!', bump: 'Не вміщуюсь!', cheer: e.cheerOk ? 'Ура! Доїхав!' : 'Доїхав, але…' }[st8.tag];
       if (txt) {
         const atDoor = st8.tag === 'cheer';
-        const bx = atDoor ? e.X(e.wallX) - 10 : e.X(x + 0.2), by = atDoor ? e.Y(e.H + 2.1) + 4 : e.Y(y0 + 1.35);
+        const bx = atDoor ? e.X(e.wallX) - 40 : e.X(x + 0.2), by = Math.max(30, atDoor ? e.Y(e.H + 1.45) : e.Y(y0 + 1.35));
         const t = b.querySelector('text'), rc = b.querySelector('rect');
         if (t.textContent !== txt) { t.textContent = txt; rc.setAttribute('width', txt.length * 7.4 + 16); rc.setAttribute('x', -(txt.length * 7.4 + 16) / 2); }
         b.setAttribute('transform', `translate(${bx.toFixed(1)} ${by.toFixed(1)})`);
@@ -240,10 +240,9 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
     <rect x=${X(wallX)} y=${Y(H)} width=${W - X(wallX)} height=${(H - worldBot) * sc} fill=${C.concrete} />
     <line x1=${X(wallX)} y1=${Y(H)} x2=${W} y2=${Y(H)} stroke=${C.line} stroke-width="1.5" />
     <!-- укіс дверного прорізу (за площиною розрізу), перемичка в розрізі, полотно дверей -->
-    <rect x=${X(wallX)} y=${Y(H + 2.1)} width=${0.3 * sc} height=${2.1 * sc} fill="#26323f" />
-    <rect x=${X(wallX)} y=${Y(worldTop)} width=${0.3 * sc} height=${(worldTop - H - 2.1) * sc} fill=${C.wall} />
-    <rect ref=${doorRef} x=${X(wallX + 0.25)} y=${Y(H + 2.05)} width=${0.05 * sc} height=${2.03 * sc} fill=${C.door} opacity="0.7" />
-    <text x=${X(wallX + 0.15)} y=${Y(H + 2.1) - 6} class="lbl" text-anchor="middle" fill=${C.muted}>вхід</text>
+    <rect x=${X(wallX)} y=${0} width=${0.3 * sc} height=${Y(H)} fill="#26323f" />
+    <rect ref=${doorRef} x=${X(wallX + 0.25)} y=${0} width=${0.05 * sc} height=${Y(H)} fill=${C.door} opacity="0.7" />
+    <text x=${X(wallX + 0.35) + 4} y=${Y(H + 1.5)} class="lbl" fill=${C.muted}>вхід</text>
 
     <!-- тіло пандуса -->
     <path d=${body} fill=${C.concrete} />
@@ -295,8 +294,8 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
 
     <!-- поручні: розміри як на рис. 5г -->
     <g style=${fade(['rails'])} class="fade">
-      <${DimV} x=${X(xs - s.railExt) - 12} y1=${Y(0)} y2=${Y(s.railTop)} side=${-1} label=${fmt(s.railTop * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
-      <${DimV} x=${X(xs - s.railExt) - 44} y1=${Y(0)} y2=${Y(s.railLow)} side=${-1} label=${fmt(s.railLow * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
+      <${DimV} x=${Math.max(78, X(xs - s.railExt) - 12)} y1=${Y(0)} y2=${Y(s.railTop)} side=${-1} label=${fmt(s.railTop * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
+      <${DimV} x=${Math.max(44, X(xs - s.railExt) - 46)} y1=${Y(0)} y2=${Y(s.railLow)} side=${-1} label=${fmt(s.railLow * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
       <${DimH} x1=${X(xe)} x2=${X(xe + s.railExt)} y=${Y(H + s.railTop) - 30} up outside label=${`${fmt(s.railExt * 1000, 0)} продовження`} text=${st('railExt') === 'fail' ? C.fail : C.ink} />
       <${DimH} x1=${X(xLast)} x2=${X(xe + s.railExt)} y=${Y(H + s.railTop) - 14} up outside label=${`${fmt(s.postGap * 1000, 0)} до опори`} text=${st('postGap') === 'fail' ? C.fail : C.ink} />
     </g>
@@ -321,7 +320,7 @@ export function SectionView({ s, ev, focus, W, maxH }) {
   const r = s.railDiam / 2, half = s.width / 2;
   const zr = half + r, zp = half + 2 * r + 0.045, zE = zp + 0.06;   // вісь поручня, опори, край плити
   const worldW = 2 * zE + 0.25, worldTop = Math.max(s.railTop, 1.3) + 0.35, worldBot = -0.25;
-  const padL = 46, padR = 74, padT = 34, padB = 34;
+  const padL = 46, padR = 74, padT = 34, padB = 40;
   const sc = Math.min((W - padL - padR) / worldW, (maxH - padT - padB) / (worldTop - worldBot));
   const svgH = Math.ceil((worldTop - worldBot) * sc + padT + padB);
   const cx = padL + (W - padL - padR) / 2;
@@ -361,7 +360,7 @@ export function SectionView({ s, ev, focus, W, maxH }) {
     <g style=${fade(['width'])} class="fade">
       ${sides.length === 2 && html`<line x1=${X(-half)} y1=${Y(worldTop - 0.1)} x2=${X(-half)} y2=${Y(ys(-half) + 0.1)} stroke=${SC[wSt]} stroke-dasharray="4 4" opacity="0.7" />`}
       <line x1=${X(half)} y1=${Y(worldTop - 0.1)} x2=${X(half)} y2=${Y(ys(half) + 0.1)} stroke=${SC[wSt]} stroke-dasharray="4 4" opacity="0.7" />
-      <${DimH} x1=${X(-half)} x2=${X(half)} y=${Y(worldTop - 0.16)} up label=${`${fmt(s.width)} м у просвіті`} color=${SC[wSt]} text=${SC[wSt]} />
+      <${DimH} x1=${X(-half)} x2=${X(half)} y=${Y(worldTop - 0.16)} up label=${(half * 2 * sc > 130 ? `${fmt(s.width)} м у просвіті` : `${fmt(s.width)} м`)} color=${SC[wSt]} text=${SC[wSt]} outside />
     </g>
     <g style=${fade(['rails'])} class="fade">
       ${levels.map((lvl, i) => html`<${DimV} x=${X(zE) + 14 + i * 22} y1=${Y(ys(zr))} y2=${Y(ys(zr) + lvl)} label=${fmt(lvl * 1000, 0)}
@@ -370,8 +369,8 @@ export function SectionView({ s, ev, focus, W, maxH }) {
         fill=${st('railDiam') === 'fail' ? C.fail : C.ink}>Ø ${fmt(s.railDiam * 1000, 0)}</text>
     </g>
     <g style=${fade(['slope', 'safety'])} class="fade">
-      <text x=${X(zE)} y=${Y(-0.2) + 18} text-anchor="end" class="lbl" fill=${SC[st('cross')]}>ухил ${fmtT(s.cross, 1)} % →</text>
-      <text x=${X(-zE)} y=${Y(-0.2) + 18} text-anchor="start" class="lbl" fill=${curbClr}>бортик ${fmt(s.curb * 1000, 0)} мм</text>
+      <text x=${X(0)} y=${Y(-0.2) + 16} text-anchor="middle" class="lbl" fill=${SC[st('cross')]}>поперечний ухил ${fmtT(s.cross, 1)} % →</text>
+      <text x=${X(0)} y=${Y(-0.2) + 31} text-anchor="middle" class="lbl" fill=${curbClr}>бортики ${fmt(s.curb * 1000, 0)} мм</text>
     </g>
   </svg>`;
 }

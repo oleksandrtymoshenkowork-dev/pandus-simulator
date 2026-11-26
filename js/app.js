@@ -103,7 +103,7 @@ function Verdict({ s, ev, onGo, onFix }) {
 
 /* ── навчання ── */
 const TOUR = [
-  { sel: '.verdict', title: 'Світлофор норми', text: 'Зелений — відповідає, жовтий — допускається як виняток, червоний — порушення. Кожне зауваження має пункт ДБН і кнопку «виправити».' },
+  { sel: '.mini, .verdict', title: 'Світлофор норми', text: 'Зелений — відповідає, жовтий — допускається як виняток, червоний — порушення. Кожне зауваження має пункт ДБН і кнопку «виправити».' },
   { sel: '.viewer', title: 'Схеми в реальному масштабі', text: 'Профіль, поперечний переріз і план. Людина в кріслі сама пробує заїхати: якщо круто — скочується, якщо вузько — не вміщується.' },
   { sel: '.modes', title: 'Тип будівництва і рух', text: 'Для реконструкції мінімальна ширина менша (0,90 м), а табл. Д.1 — рекомендація. Для двобічного руху потрібно 1,80 м.' },
   { sel: '.tabs', title: 'Групи параметрів', text: 'Кольорова крапка — стан групи. Вкладка підсвічує потрібні розміри на схемах.' },
@@ -114,11 +114,13 @@ function Tour({ onClose }) {
   const [i, setI] = useState(0);
   const [box, setBox] = useState(null);
   const step = TOUR[i], last = TOUR.length - 1;
+  // перший видимий елемент (на телефоні вердикт — це липкий рядок угорі)
+  const pick = (sel) => [...document.querySelectorAll(sel)].find((e) => e.getBoundingClientRect().width > 0);
   useEffect(() => {
-    const el = document.querySelector(step.sel);
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const el = pick(step.sel);
+    if (el && !el.classList.contains('mini')) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     const measure = () => {
-      const e = document.querySelector(step.sel);
+      const e = pick(step.sel);
       if (!e) return setBox(null);
       const r = e.getBoundingClientRect();
       setBox({ top: r.top, left: r.left, w: r.width, h: r.height });
@@ -204,7 +206,7 @@ function App() {
       if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ title: 'Мій пандус — перевірка за ДБН', url }); return; }
       await navigator.clipboard.writeText(url);
       say('Посилання скопійовано — надішліть його колезі');
-    } catch (e) { if (e && e.name !== 'AbortError') say('Скопіюйте адресу з рядка браузера'); }
+    } catch (e) { if (e && e.name !== 'AbortError') prompt('Скопіюйте посилання на цей пандус:', url); }
   };
   const reset = () => { setS({ ...DEFAULTS }); setTab('slope'); say('Скинуто до типового пандуса'); };
   const closeTour = () => { setTour(false); try { localStorage.setItem('pandusTour3', '1'); } catch (e) {} };
