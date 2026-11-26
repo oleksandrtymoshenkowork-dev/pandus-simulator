@@ -57,26 +57,27 @@ export function setRiderEnv({ segs, mode, wallX, verdict }) {
     }
     const stopX = wallX - 0.8;
     const raw = pieces.reduce((a, p, i) => a + Math.abs(p.to - (i ? pieces[i - 1].to : x)) / p.speed, 0) + Math.abs(stopX - pieces[pieces.length - 1].to) / 1.3;
-    const f = Math.min(1.25, Math.max(0.3, raw / 9));          // довгі пандуси — швидше, щоб цикл був ≤ ~12 с
-    pieces.forEach((p, i) => { move(p.to, p.speed * f, i === 0 ? easeIn : null); if (p.rest) wait(0.8, 'rest'); });
+    const f = Math.min(3, Math.max(0.9, raw / 5.5));            // будь-який пандус проїжджається за ~5–6 с
+    pieces.forEach((p, i) => { move(p.to, p.speed * f, i === 0 ? easeIn : null); if (p.rest) wait(0.55, 'rest'); });
     move(stopX, 1.3 * f, easeOut);
-    wait(0.9, 'door');
-    move(wallX + 0.5, 1.0, easeIn, 'enter');
-    wait(verdict === 'ok' ? 1.4 : 1.1, 'cheer');
+    wait(0.6, 'door');
+    move(wallX + 0.5, 1.4, easeIn, 'enter');
+    wait(verdict === 'ok' ? 1.3 : 1.0, 'cheer');
   } else if (mode === 'slip') {
+    // «не може заїхати»: швидкий під'їзд, ривок угору, зупинка, скочування назад
     const m = marches[0], len = m.x1 - m.x0;
-    wait(0.35, 'in');
-    move(Math.max(0.2, xs - 0.35), 1.2, easeIn);
-    move(xs + Math.min(0.45 * len, 1.6), 0.45, easeOut, 'climb');
-    wait(1.0, 'strain');
-    move(0.15, 1.9, easeIn, 'back');
-    wait(0.8, 'rest0');
+    wait(0.25, 'in');
+    move(Math.max(0.2, xs - 0.35), 2.0, easeIn);
+    move(xs + Math.min(0.35 * len, 1.2), 0.95, easeOut, 'climb');
+    wait(0.55, 'strain');
+    move(0.15, 3.2, easeIn, 'back');
+    wait(0.45, 'rest0');
   } else {
-    wait(0.35, 'in');
-    move(Math.max(0.2, xs - 0.95), 1.0, easeOut);
-    wait(1.4, 'bump');
-    move(Math.max(0.15, xs - 1.4), 0.8, easeInOut);
-    wait(0.6, 'rest0');
+    wait(0.25, 'in');
+    move(Math.max(0.2, xs - 0.95), 1.7, easeOut);
+    wait(0.9, 'bump');
+    move(Math.max(0.15, xs - 1.4), 1.4, easeInOut);
+    wait(0.4, 'rest0');
   }
 
   let acc = 0;

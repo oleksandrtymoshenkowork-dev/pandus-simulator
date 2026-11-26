@@ -65,56 +65,64 @@ function DimV({ x, y1, y2, label, color = C.faint, text = C.muted, side = 1 }) {
 }
 
 /* ── фігури (метри, y — вгору) ── */
+/* Фігури — мінімалістичні, однією лінією сталої товщини (vector-effect: non-scaling-stroke, клас .mono),
+   у метрах, y — вгору. Рука, спиці й ефекти анімуються з циклу в ProfileView. */
+const ARM_S = [0.06, 0.93];                                    // плече
+export function armPath(theta) {
+  // кисть на ободі колеса (центр 0;0,3, r 0,25), лікоть відведений назад
+  const hx = 0.25 * Math.cos(theta), hy = 0.3 + 0.25 * Math.sin(theta);
+  const vx = hx - ARM_S[0], vy = hy - ARM_S[1], l = Math.hypot(vx, vy) || 1;
+  const ex = ARM_S[0] + vx / 2 + (vy / l) * 0.09, ey = ARM_S[1] + vy / 2 - (vx / l) * 0.09;
+  return `M ${ARM_S[0]} ${ARM_S[1]} L ${ex.toFixed(3)} ${ey.toFixed(3)} L ${hx.toFixed(3)} ${hy.toFixed(3)}`;
+}
 function ChairSide() {
   // початок координат — точка контакту заднього колеса, рух у бік +x
-  return html`<g stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <g stroke=${C.person}>
-      <path d="M 0.10 0.55 L 0.42 0.58 L 0.54 0.20 L 0.66 0.19" stroke-width="0.10" />
-      <path d="M 0.10 0.56 L 0.03 0.98" stroke-width="0.15" />
-      <path d="M 0.05 0.93 L 0.16 0.72 L 0.19 0.52" stroke-width="0.065" />
-      <circle cx="0.07" cy="1.15" r="0.1" fill=${C.skin} stroke="none" />
+  return html`<g class="mono" fill="none" stroke=${C.steel} stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7">
+    <circle cx="0" cy="0.3" r="0.3" stroke-width="2.2" />
+    <circle cx="0" cy="0.3" r="0.25" opacity="0.45" stroke-width="1" />
+    <g class="spokes" transform="translate(0 0.3)" opacity="0.4" stroke-width="1">
+      <path d="M -0.25 0 L 0.25 0 M -0.125 -0.217 L 0.125 0.217 M -0.125 0.217 L 0.125 -0.217" />
     </g>
-    <g stroke=${C.steel} stroke-width="0.03">
-      <path d="M -0.02 0.50 L 0.44 0.50 L 0.50 0.31 M -0.02 0.50 L -0.10 0.95 L -0.21 0.96 M 0.42 0.50 L 0.58 0.17 L 0.70 0.17 M 0.46 0.31 L 0.50 0.075" />
-      <circle cx="0" cy="0.3" r="0.3" stroke-width="0.04" />
-      <circle cx="0" cy="0.3" r="0.255" stroke-width="0.015" opacity="0.7" />
-      <g class="spokes" transform="translate(0 0.3)" stroke-width="0.012" opacity="0.85">
-        <path d="M -0.28 0 L 0.28 0 M 0 -0.28 L 0 0.28 M -0.2 -0.2 L 0.2 0.2 M -0.2 0.2 L 0.2 -0.2" />
-        <circle r="0.035" fill=${C.steel} />
-      </g>
-      <circle cx="0.5" cy="0.075" r="0.075" />
+    <circle cx="0" cy="0.3" r="0.028" fill=${C.steel} stroke="none" />
+    <circle cx="0.52" cy="0.07" r="0.07" />
+    <path d="M -0.02 0.5 L 0.44 0.5 L 0.48 0.3 L 0.52 0.07 M -0.02 0.5 L -0.1 0.93 L -0.2 0.94 M 0.42 0.5 L 0.56 0.15 L 0.66 0.15" />
+    <g stroke=${C.ink} stroke-width="2.2">
+      <circle cx="0.05" cy="1.13" r="0.1" />
+      <path d="M 0.06 1.01 L 0.1 0.56 L 0.42 0.6 L 0.5 0.2 L 0.6 0.19" />
+      <path class="arm" d=${armPath(1.2)} />
+    </g>
+    <path class="fx-sweat" d="M 0.2 1.3 q 0.04 -0.06 0 -0.1 q -0.04 0.04 0 0.1 Z" fill=${C.water} stroke="none" opacity="0" />
+    <g class="fx-speed" opacity="0" stroke=${C.ink} stroke-width="1.4"><path d="M 0.72 0.75 L 0.98 0.75 M 0.76 0.5 L 1.08 0.5 M 0.72 0.25 L 0.94 0.25" /></g>
+    <g class="fx-bump" opacity="0" stroke=${C.fail} stroke-width="1.8">
+      <path d="M 0.78 0.45 L 0.95 0.55 M 0.8 0.32 L 0.98 0.32 M 0.78 0.2 L 0.95 0.1 M 0.74 0.6 L 0.82 0.76" />
     </g>
   </g>`;
 }
 function ChairFront({ hit }) {
   // центр — посередині між колесами на рівні поверхні
   const st = hit ? C.fail : C.steel;
-  return html`<g stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <g stroke=${st} stroke-width="0.03">
-      <rect x="-0.35" y="0" width="0.04" height="0.6" rx="0.02" fill=${st} stroke="none" />
-      <rect x="0.31" y="0" width="0.04" height="0.6" rx="0.02" fill=${st} stroke="none" />
-      <path d="M -0.29 0.3 L 0.29 0.3 M -0.25 0.48 L 0.25 0.48 M -0.22 0.48 L -0.22 0.93 M 0.22 0.48 L 0.22 0.93 M -0.15 0.12 L -0.05 0.12 M 0.05 0.12 L 0.15 0.12" />
-    </g>
-    <g stroke=${C.person}>
-      <path d="M -0.13 0.52 L -0.12 0.16 M 0.13 0.52 L 0.12 0.16" stroke-width="0.09" />
-      <path d="M -0.15 0.52 L -0.19 0.98 L 0.19 0.98 L 0.15 0.52 Z" fill=${C.person} stroke-width="0.04" />
-      <path d="M -0.19 0.95 L -0.28 0.72 L -0.31 0.55 M 0.19 0.95 L 0.28 0.72 L 0.31 0.55" stroke-width="0.06" />
-      <circle cx="0" cy="1.15" r="0.1" fill=${C.skin} stroke="none" />
+  return html`<g class="mono" fill="none" stroke=${st} stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7">
+    <rect x="-0.35" y="0" width="0.045" height="0.6" rx="0.022" stroke-width="2" />
+    <rect x="0.305" y="0" width="0.045" height="0.6" rx="0.022" stroke-width="2" />
+    <path d="M -0.3 0.3 L 0.3 0.3 M -0.24 0.48 L 0.24 0.48 M -0.22 0.48 L -0.22 0.93 M 0.22 0.48 L 0.22 0.93 M -0.17 0.12 L -0.05 0.12 M 0.05 0.12 L 0.17 0.12" />
+    <g stroke=${hit ? C.fail : C.ink} stroke-width="2.2">
+      <circle cx="0" cy="1.14" r="0.1" />
+      <path d="M -0.17 0.97 L 0.17 0.97 M 0 0.97 L 0 0.55 M -0.13 0.52 L 0.13 0.52 M -0.12 0.52 L -0.11 0.14 M 0.12 0.52 L 0.11 0.14" />
+      <path d="M -0.17 0.97 L -0.27 0.74 L -0.31 0.56 M 0.17 0.97 L 0.27 0.74 L 0.31 0.56" />
     </g>
   </g>`;
 }
 function ChairTop({ hit }) {
   // центр сидіння, рух у бік +x
   const st = hit ? C.fail : C.steel;
-  return html`<g stroke-linecap="round" fill="none">
-    <rect x="-0.30" y="-0.35" width="0.6" height="0.045" rx="0.02" fill=${st} />
-    <rect x="-0.30" y="0.305" width="0.6" height="0.045" rx="0.02" fill=${st} />
-    <rect x="0.33" y="-0.24" width="0.1" height="0.035" fill=${st} />
-    <rect x="0.33" y="0.205" width="0.1" height="0.035" fill=${st} />
-    <rect x="-0.24" y="-0.25" width="0.46" height="0.5" rx="0.05" stroke=${st} stroke-width="0.025" />
-    <path d="M 0.15 -0.1 L 0.48 -0.09 M 0.15 0.1 L 0.48 0.09" stroke=${C.person} stroke-width="0.09" />
-    <ellipse cx="-0.06" cy="0" rx="0.12" ry="0.22" fill=${C.person} />
-    <circle cx="-0.04" cy="0" r="0.095" fill=${C.skin} />
+  return html`<g class="mono" fill="none" stroke=${st} stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6">
+    <rect x="-0.3" y="-0.35" width="0.6" height="0.05" rx="0.025" />
+    <rect x="-0.3" y="0.3" width="0.6" height="0.05" rx="0.025" />
+    <path d="M 0.33 -0.22 L 0.43 -0.22 M 0.33 0.22 L 0.43 0.22 M -0.24 -0.25 L -0.24 0.25" />
+    <g stroke=${hit ? C.fail : C.ink} stroke-width="2">
+      <circle cx="-0.06" cy="0" r="0.1" />
+      <path d="M -0.1 -0.2 Q 0.02 0 -0.1 0.2 M 0.08 -0.1 L 0.46 -0.09 M 0.08 0.1 L 0.46 0.09" />
+    </g>
   </g>`;
 }
 
@@ -210,6 +218,16 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
     el.setAttribute('opacity', st8.op.toFixed(2));
     const sp = el.querySelector('.spokes');
     if (sp) sp.setAttribute('transform', `translate(0 0.3) rotate(${(-(x / 0.3) * 180 / Math.PI).toFixed(1)})`);
+    // рука штовхає обід; на «Ой, круто!» — напружено смикається, при скочуванні — гальмує
+    const tag = st8.tag;
+    const theta = tag === 'back' ? 0.95 : tag === 'strain' ? 1.0 + 0.12 * Math.sin(st8.k * 40)
+      : st8.dir ? 1.22 + 0.6 * Math.sin((x / 0.3) * 0.9) : 1.22;
+    const arm = el.querySelector('.arm');
+    if (arm) arm.setAttribute('d', armPath(theta));
+    const fx = (cls, op, tr) => { const n = el.querySelector(cls); if (n) { n.setAttribute('opacity', op.toFixed(2)); if (tr) n.setAttribute('transform', tr); } };
+    fx('.fx-sweat', tag === 'strain' ? Math.min(1, st8.k * 3) : 0, `translate(0 ${(-0.12 * st8.k).toFixed(3)})`);
+    fx('.fx-speed', tag === 'back' ? Math.sin(st8.k * Math.PI) : 0);
+    fx('.fx-bump', tag === 'bump' ? Math.abs(Math.sin(st8.k * Math.PI * 3.5)) : 0);
     if (doorRef.current) doorRef.current.setAttribute('width', Math.max(0.05, 0.9 * st8.door) * e.sc);
     const b = bubRef.current;
     if (b) {
