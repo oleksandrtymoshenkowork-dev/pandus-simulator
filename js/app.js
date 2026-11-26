@@ -342,7 +342,8 @@ function App() {
               help="Колір поручнів має контрастувати з пандусом і тлом — щоб їх бачили люди зі слабким зором." />
             <${Switch} name="Тут бувають дошкільнята" hint="садок, дитячий майданчик, парк" value=${s.kids} onChange=${(v) => set({ kids: v })}
               help="У місцях масового перебування дітей дошкільного віку потрібен третій поручень на висоті 0,50 м (п. 5.3.2)." />
-            <${Switch} name="Дитячий поручень 0,50 м" hint="п. 5.3.2" status=${ev.byId.railChild && ev.byId.railChild.status} value=${s.railChild} onChange=${(v) => set({ railChild: v })} />`}
+            <${Switch} name="Дитячий поручень 0,50 м" hint="п. 5.3.2" status=${ev.byId.railChild && ev.byId.railChild.status} value=${s.railChild} onChange=${(v) => set({ railChild: v })} />
+            <div class="info"><b>i</b><span>Розміри на профілі — як на <b>рис. 5г</b>: 900 і 700 — від поверхні до верху поручня; 300 — від початку (кінця) схилу до зовнішнього краю заокруглення, яке з'єднує обидва рівні; 150…200 — від краю заокруглення до осі крайньої опори. Поручні безперервні вздовж маршів і проміжних площадок (п. 5.3.2.1).</span></div>`}
 
           ${tab === 'safety' && html`
             <${Slider} id="in-cu" label="Бортик по краях" range=${R.curb} value=${s.curb} onChange=${(v) => set({ curb: v })} unit="м" digits=${3}

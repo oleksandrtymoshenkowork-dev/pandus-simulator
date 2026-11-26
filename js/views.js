@@ -49,7 +49,8 @@ function DimH({ x1, x2, y, label, color = C.faint, text = C.muted, up = false, m
     <line x1=${x1} y1=${y - 5} x2=${x1} y2=${y + 5} /><line x1=${x2} y1=${y - 5} x2=${x2} y2=${y + 5} />
     <line x1=${x1 - 3.5} y1=${y + 3.5} x2=${x1 + 3.5} y2=${y - 3.5} /><line x1=${x2 - 3.5} y1=${y + 3.5} x2=${x2 + 3.5} y2=${y - 3.5} />
     ${fits || outside
-      ? html`<text x=${fits ? (x1 + x2) / 2 : Math.max(x1, x2) + 6} y=${fits ? (up ? y - 5 : y + 14) : y + 4} fill=${text} stroke="none" text-anchor=${fits ? 'middle' : 'start'} class="dim">${label}</text>`
+      ? html`<text x=${fits ? (x1 + x2) / 2 : outside === 'left' ? Math.min(x1, x2) - 6 : Math.max(x1, x2) + 6} y=${fits ? (up ? y - 5 : y + 14) : y + 4}
+          fill=${text} stroke="none" text-anchor=${fits ? 'middle' : outside === 'left' ? 'end' : 'start'} class="dim">${label}</text>`
       : null}
   </g>`;
 }
@@ -145,25 +146,32 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
   /* поручні: вершини — від початку першого маршу до кінця останнього, плюс горизонтальні продовження */
   const inner = pts.filter((p) => p.x >= xs - 1e-6 && p.x <= xe + 1e-6);
   const r = s.railDiam / 2;
-  const railFail = ['railLevels', 'railDiam', 'railContrast'].some((id) => st(id) === 'fail');
   const railColor = st('railLevels') === 'fail' || st('railDiam') === 'fail' ? C.fail : s.railContrast ? C.rail : C.railDull;
   const extColor = st('railExt') === 'fail' ? C.fail : railColor;
   const railW = Math.max(s.railDiam * sc, 1.6);
-  const R = Math.max((s.railTop - s.railLow) / 2, 0.02);           // радіус U-подібного завершення
-  const loopRx = Math.min(R, Math.max(s.railExt, 0.01));
-  const straight = Math.max(s.railExt - loopRx, 0);
-  const railLine = (lvl, sideExt = straight) => P([
-    { x: xs - sideExt, y: lvl }, ...inner.map((p) => ({ x: p.x, y: p.y + lvl })), { x: xe + sideExt, y: H + lvl },
+  /* Рис. 5г: 900 і 700 — від поверхні до ВЕРХУ поручня, тож вісь труби нижче на r.
+     300 — від вертикалі початку (кінця) схилу до ЗОВНІШНЬОГО краю заокруглення.
+     Рівні 0,9 і 0,7 з'єднує півколо (U-завершення) — і внизу, і вгорі. */
+  const aTop = s.railTop - r, aLow = s.railLow - r;                 // висоти осей труб
+  const Rax = Math.max((aTop - aLow) / 2, 0.01);                     // радіус півкола по осі
+  const extAx = Math.max(s.railExt - r, 0.005);                      // крайня точка осі заокруглення
+  const loopRx = Math.min(Rax, extAx);
+  const straight = extAx - loopRx;                                   // пряма горизонтальна ділянка до дуги
+  const railLine = (axis, sideExt = straight) => P([
+    { x: xs - sideExt, y: axis }, ...inner.map((p) => ({ x: p.x, y: p.y + axis })), { x: xe + sideExt, y: H + axis },
   ]);
-  // заокруглені завершення, що з'єднують рівні 0,9 і 0,7 (рис. 5г)
   const loop = (x0, yb, dir) => {
-    const yt = Y(yb + s.railTop), yl = Y(yb + s.railLow), rx = loopRx * sc, ry = (yl - yt) / 2;
+    const yt = Y(yb + aTop), yl = Y(yb + aLow), rx = loopRx * sc, ry = (yl - yt) / 2;
     return `M ${X(x0)} ${yt} A ${rx} ${ry} 0 0 ${dir < 0 ? 0 : 1} ${X(x0)} ${yl}`;
   };
+  // дитячий поручень 0,5 м (рис. 5а) — окрема труба, кінці теж горизонтальні й заокруглені донизу
+  const cr = Math.min(0.05, extAx), childStraight = extAx - cr;
   const childEnd = (x0, yb, dir) => {
-    const y = Y(yb + 0.5), rr = 0.05 * sc;
+    const y = Y(yb + 0.5 - r), rr = cr * sc;
     return `M ${X(x0)} ${y} A ${rr} ${rr} 0 0 ${dir < 0 ? 0 : 1} ${X(x0) + dir * rr} ${y + rr}`;
   };
+  // труба «як на кресленні»: контур + світлий просвіт усередині, коли вистачає масштабу
+  const tube = (d, color) => html`<path d=${d} stroke=${color} stroke-width=${railW} />${railW >= 4.5 ? html`<path d=${d} stroke="#0d131b" stroke-width=${railW * 0.4} />` : null}`;
   /* опори: крайні — на postGap від краю заокруглення, проміжні — не рідше ніж через 1,5 м */
   const xFirst = xs - s.railExt + s.postGap, xLast = xe + s.railExt - s.postGap;
   const marks = [...inner.map((p) => p.x).filter((x) => x - xFirst >= 0.4 && xLast - x >= 0.4), xLast];
@@ -266,19 +274,18 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
     })}
 
     <!-- опори -->
-    ${postXs.map((px) => html`<line x1=${X(px)} y1=${Y(surfY(segs, px))} x2=${X(px)} y2=${Y(surfY(segs, px) + s.railTop + 0.05)} stroke=${postColor} stroke-width=${Math.max(0.04 * sc, 1.4)} />`)}
+    ${postXs.map((px) => html`<line x1=${X(px)} y1=${Y(surfY(segs, px))} x2=${X(px)} y2=${Y(surfY(segs, px) + s.railTop + 0.03)} stroke=${postColor} stroke-width=${Math.max(0.04 * sc, 1.4)} />`)}
 
-    <!-- поручні: 0,7 і 0,9 м з U-завершеннями (рис. 5г); дитячий 0,5 м (рис. 5а) -->
+    <!-- поручні: 0,9 і 0,7 м з U-завершеннями (рис. 5г); дитячий 0,5 м (рис. 5а) -->
     <g fill="none" stroke-linecap="round" stroke-linejoin="round" class="tr-stroke">
       ${(s.kids || s.railChild) && html`<g stroke=${s.railChild ? railColor : C.fail} stroke-width=${railW} stroke-dasharray=${s.railChild ? null : '5 5'} opacity=${s.railChild ? 0.9 : 0.6}>
-        <path d=${railLine(0.5, s.railExt - 0.05)} />
-        <path d=${childEnd(xs - s.railExt + 0.05, 0, -1)} /><path d=${childEnd(xe + s.railExt - 0.05, H, 1)} />
+        <path d=${railLine(0.5 - r, childStraight)} />
+        <path d=${childEnd(xs - childStraight, 0, -1)} /><path d=${childEnd(xe + childStraight, H, 1)} />
       </g>`}
-      <path d=${railLine(s.railLow)} stroke=${railColor} stroke-width=${railW} />
-      <path d=${railLine(s.railTop)} stroke=${railColor} stroke-width=${railW} />
-      <g stroke=${extColor} stroke-width=${railW}>
-        <path d=${loop(xs - straight, 0, -1)} /><path d=${loop(xe + straight, H, 1)} />
-      </g>
+      ${tube(railLine(aLow), railColor)}
+      ${tube(railLine(aTop), railColor)}
+      ${tube(loop(xs - straight, 0, -1), extColor)}
+      ${tube(loop(xe + straight, H, 1), extColor)}
     </g>
 
     <!-- крісло колісне -->
@@ -294,10 +301,23 @@ export function ProfileView({ s, segs, ev, focus, W, maxH }) {
 
     <!-- поручні: розміри як на рис. 5г -->
     <g style=${fade(['rails'])} class="fade">
-      <${DimV} x=${Math.max(78, X(xs - s.railExt) - 12)} y1=${Y(0)} y2=${Y(s.railTop)} side=${-1} label=${fmt(s.railTop * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
-      <${DimV} x=${Math.max(44, X(xs - s.railExt) - 46)} y1=${Y(0)} y2=${Y(s.railLow)} side=${-1} label=${fmt(s.railLow * 1000, 0)} text=${st('railLevels') === 'fail' ? C.fail : C.ink} />
-      <${DimH} x1=${X(xe)} x2=${X(xe + s.railExt)} y=${Y(H + s.railTop) - 30} up outside label=${`${fmt(s.railExt * 1000, 0)} продовження`} text=${st('railExt') === 'fail' ? C.fail : C.ink} />
-      <${DimH} x1=${X(xLast)} x2=${X(xe + s.railExt)} y=${Y(H + s.railTop) - 14} up outside label=${`${fmt(s.postGap * 1000, 0)} до опори`} text=${st('postGap') === 'fail' ? C.fail : C.ink} />
+      ${[{ x0: xs, yb: 0, dir: -1, xp: xFirst }, { x0: xe, yb: H, dir: 1, xp: xLast }].map(({ x0, yb, dir, xp }) => {
+        const xo = x0 + dir * s.railExt;                       // зовнішній край заокруглення
+        const y300 = Y(yb + s.railTop) - 34, y150 = Y(yb + s.railTop) - 18;
+        const clr = (id) => (st(id) === 'fail' ? C.fail : C.ink);
+        const hx = (k) => Math.min(W - 30, Math.max(44, X(xo) + dir * k));
+        return html`<g>
+          <g stroke=${C.faint} stroke-width="0.8" stroke-dasharray="3 3">
+            <line x1=${X(x0)} y1=${Y(yb)} x2=${X(x0)} y2=${y300 - 5} />
+            <line x1=${X(xo)} y1=${Y(yb + s.railLow - r)} x2=${X(xo)} y2=${y300 - 5} />
+            <line x1=${X(xp)} y1=${Y(yb + s.railTop + 0.03)} x2=${X(xp)} y2=${y150 - 5} />
+          </g>
+          <${DimH} x1=${X(Math.min(x0, xo))} x2=${X(Math.max(x0, xo))} y=${y300} up outside=${dir < 0 ? 'left' : 'right'} label=${fmt(s.railExt * 1000, 0)} text=${clr('railExt')} />
+          <${DimH} x1=${X(Math.min(xp, xo))} x2=${X(Math.max(xp, xo))} y=${y150} up outside=${dir < 0 ? 'left' : 'right'} label=${fmt(s.postGap * 1000, 0)} text=${clr('postGap')} />
+          <${DimV} x=${hx(14)} y1=${Y(yb)} y2=${Y(yb + s.railTop)} side=${dir} label=${fmt(s.railTop * 1000, 0)} text=${clr('railLevels')} />
+          <${DimV} x=${hx(42)} y1=${Y(yb)} y2=${Y(yb + s.railLow)} side=${dir} label=${fmt(s.railLow * 1000, 0)} text=${clr('railLevels')} />
+        </g>`;
+      })}
     </g>
 
     <!-- висоти, площадки, довжини -->
@@ -470,7 +490,7 @@ export function PlanView({ s, segs, ev, focus, W, maxH }) {
 
 /** Ширина контейнера в px — схеми малюються «піксель у піксель», тож підписи читаються й на телефоні. */
 export function useWidth(ref, fallback = 900) {
-  const [w, setW] = useStateW(fallback);
+  const [w, setW] = useStateW(() => Math.max(260, Math.min(fallback, innerWidth - 40)));   // без «спалаху» на телефоні
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
