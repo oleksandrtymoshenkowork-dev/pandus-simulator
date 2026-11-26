@@ -180,6 +180,18 @@ function App() {
   /* Без «стрибків» на телефоні й планшеті: сторінка не стає коротшою при перемиканні вкладок чи
      зникненні зауважень — інакше браузер обрізає прокрутку і все під пальцем з'їжджає. */
   const appRef = useRef(null), tallest = useRef(0);
+  /* Симулятор «прив'язаний» до екрана: якщо щось над ним змінило висоту (текст норм у вердикті),
+     сторінка прокручується на ту саму величину — текст росте вгору, а схема й повзунки стоять на місці. */
+  const mainRef = useRef(null), mainTop = useRef(null);
+  useLayoutEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const docTop = r.top + scrollY;
+    const d = mainTop.current == null ? 0 : docTop - mainTop.current;
+    if (Math.abs(d) > 0.5 && r.top - d < innerHeight) scrollBy(0, d);
+    mainTop.current = docTop;
+  });
   useLayoutEffect(() => {
     const el = appRef.current;
     if (!el) return;
@@ -271,7 +283,7 @@ function App() {
 
     <${Verdict} s=${s} ev=${ev} onGo=${goTab} onFix=${set} />
 
-    <div class="main">
+    <div class="main" ref=${mainRef}>
       <div class="viewer">
         <div class="vtabs" role="tablist" aria-label="Схема">
           ${VIEWS.map((v) => html`<button type="button" role="tab" aria-selected=${view === v.id} class=${view === v.id ? 'on' : ''} onClick=${() => setView(v.id)}>${v.label}</button>`)}

@@ -157,8 +157,8 @@ svg .big { font-size: 13px; font-weight: 600; }
 .tabs button.on { color: var(--ink); background: var(--panel-2); border-color: var(--line); }
 
 .sliders { display: flex; flex-direction: column; gap: 16px; }
-/* блоки, що змінюють вміст, не можуть бути «якорем» прокрутки — інакше браузер сам зсуває сторінку */
-.sliders, .verdict, .viewer { overflow-anchor: none; }
+/* вбудоване «якорення» прокрутки браузера вимкнено: положення симулятора тримає app.js однаково в усіх браузерах */
+html, body { overflow-anchor: none; }
 .sl-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sl-name { font-size: 14px; font-weight: 500; }
 .sl-val { margin-left: auto; display: flex; align-items: center; gap: 5px; }
