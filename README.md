@@ -17,7 +17,7 @@ index.html, styles.css
 js/norms.js     нормативне ядро (чисті функції, табл. Д.1, стан у посиланні)
 js/views.js     SVG-схеми; js/anim.js — анімація; js/ui.js — елементи керування; js/app.js — застосунок
 js/vendor/      htm + Preact (13 КБ, без збірки й CDN)
-tests/          node --test tests/
+tests/          node --test tests/*.test.mjs
 ```
 Локально: `python -m http.server 8765` → http://localhost:8765. Тести запускаються й перед кожним деплоєм на Pages.
 
